@@ -27,8 +27,9 @@ router.post('/add', auth, [
         const file = req.files.file;
         console.log(file);
         const { link, public_id } = await fileUpload(file);
-        console.log(link, public_id);
-        const newPublic = (public)?1:0;
+        // console.log(link, public_id);
+        const newPublic = (public === 'true')?1:0;
+        // console.log('newPublic', newPublic)
         const response = await query(`INSERT INTO Multimedia (title, description, type, link, user_id, public_id, public) VALUES ('${title}', '${description}', '${type}', '${link}', '${req.user.id}', '${public_id}', '${newPublic}')`);
         const multimedia = {
             id: response.insertId,
@@ -128,5 +129,18 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
+// @route GET api/multimedia/me
+// @desc Get current users multimedia
+// @access Private
+
+router.get('/me', auth, async (req, res) => {
+    try {
+        const multimedia = await query(`SELECT * FROM Multimedia WHERE user_id = '${req.user.id}'`);
+        res.json(multimedia);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
 
 module.exports = router;
