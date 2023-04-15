@@ -26,8 +26,11 @@ router.post('/add', auth, [
         }
         const file = req.files.file;
         console.log(file);
+        if(file.size > 15*1024*1024){
+            return res.status(400).json({ errors: [{ msg: 'Size Should be less than 15MB' }] });
+        }
         const { link, public_id } = await fileUpload(file);
-        // console.log(link, public_id);
+        console.log(link, public_id);
         const newPublic = (public === 'true')?1:0;
         // console.log('newPublic', newPublic)
         const response = await query(`INSERT INTO Multimedia (title, description, type, link, user_id, public_id, public) VALUES ('${title}', '${description}', '${type}', '${link}', '${req.user.id}', '${public_id}', '${newPublic}')`);
@@ -42,7 +45,7 @@ router.post('/add', auth, [
             public: newPublic
         }
         return res.json(multimedia);
-        res.json({msg: "testing"});
+        // res.json({msg: "testing"});
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -137,6 +140,48 @@ router.get('/me', auth, async (req, res) => {
     try {
         const multimedia = await query(`SELECT * FROM Multimedia WHERE user_id = '${req.user.id}'`);
         res.json(multimedia);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route  PUT api/multimedia/:id
+// @desc   Update multimedia
+// @access Private
+
+router.put('/:id', auth, [
+    check('title', 'Please add title').not().isEmpty(),
+    check('description', 'Please add description').not().isEmpty(),
+    check('type', 'Please add type').not().isEmpty(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    const { title, description, type, public } = req.body;
+    try {
+        let multimedia = await query(`SELECT * FROM Multimedia WHERE id = '${req.params.id}'`);
+        if (multimedia.length === 0) {
+            return res.status(404).json({ msg: 'Multimedia not found' });
+        }
+        multimedia = multimedia[0];
+        if (multimedia.user_id !== req.user.id) {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+        const newPublic = (public === 'true')?1:0;
+        const response = await query(`UPDATE Multimedia SET title = '${title}', description = '${description}', type = '${type}', public = '${newPublic}' WHERE id = '${req.params.id}'`);
+        const updatedMultimedia = {
+            id: req.params.id,
+            title,
+            description,
+            type,
+            link: multimedia.link,
+            user_id: req.user.id,
+            public_id: multimedia.public_id,
+            public: newPublic
+        }
+        return res.json(updatedMultimedia);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
