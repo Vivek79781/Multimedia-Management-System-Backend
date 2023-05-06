@@ -1,9 +1,9 @@
 const config = {
   db: {
     host: "localhost",
-    user: "20CS10077",
-    password: "20CS10077",
-    database: "MultimediaManagementSystem",
+    user: "root",
+    password: "Nikhil2002#",
+    database: "multimediadb",
   }
 };
 
